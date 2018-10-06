@@ -119,13 +119,18 @@ int main(int argc, char **argv) {
   llvm::cl::ParseCommandLineOptions(argc, argv,
   "CrabLlvm-- Abstract Interpretation-based Analyzer of LLVM bitcode\n");
 
-  llvm::sys::PrintStackTraceOnErrorSignal();
+  llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
   llvm::PrettyStackTraceProgram PSTP(argc, argv);
   llvm::EnableDebugBuffering = true;
 
   std::error_code error_code;
   llvm::SMDiagnostic err;
-  llvm::LLVMContext &context = llvm::getGlobalContext();
+  //llvm::LLVMContext &context = llvm::getGlobalContext();
+  //llvm::LLVMContext *context;
+  //static llvm::LLVMContext MyGlobalContext;
+  static llvm::LLVMContext context;
+  //context = &MyGlobalContext;
+
   std::unique_ptr<llvm::Module> module;
   std::unique_ptr<llvm::tool_output_file> output;
   std::unique_ptr<llvm::tool_output_file> asmOutput;
@@ -175,11 +180,19 @@ int main(int argc, char **argv) {
   /// call graph and other IPA passes
   // llvm::initializeIPA (Registry);
   // XXX: porting to 3.8 
+  //llvm::initializeCallGraphWrapperPassPass(Registry);
+  //llvm::initializeCallGraphPrinterPass(Registry);
+  //llvm::initializeCallGraphViewerPass(Registry);
+  // XXX: not sure if needed anymore
+  //llvm::initializeGlobalsAAWrapperPassPass(Registry);  
+
+  // porting to 3.9
   llvm::initializeCallGraphWrapperPassPass(Registry);
-  llvm::initializeCallGraphPrinterPass(Registry);
+  llvm::initializeCallGraphPrinterLegacyPassPass(Registry);
   llvm::initializeCallGraphViewerPass(Registry);
   // XXX: not sure if needed anymore
   llvm::initializeGlobalsAAWrapperPassPass(Registry);  
+
     
   // add an appropriate DataLayout instance for the module
   const llvm::DataLayout *dl = &module->getDataLayout ();
@@ -198,7 +211,19 @@ int main(int argc, char **argv) {
    **/
 
   // -- turn all functions internal so that we can use DSA
-  pass_manager.add (llvm::createInternalizePass (llvm::ArrayRef<const char*>("main")));
+  //pass_manager.add (llvm::createInternalizePass (llvm::ArrayRef<const char*>("main")));
+  //pass_manager.add (llvm::createInternalizePass ());
+auto PreserveFunctions = [=](const llvm::GlobalValue &GV) {
+//    for (size_t I = 0; I < Len; I++) {
+      if (GV.getName() == "main") {
+        return true;
+      }
+  //  }
+    return false;
+};
+  pass_manager.add (llvm::createInternalizePass (PreserveFunctions)); //TODO BUG
+
+
   // kill unused internal global    
   pass_manager.add (llvm::createGlobalDCEPass ()); 
   pass_manager.add (crab_llvm::createRemoveUnreachableBlocksPass ());
