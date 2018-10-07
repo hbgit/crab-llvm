@@ -13,6 +13,7 @@ set(LLVM_LINK_COMPONENTS
 
 add_executable(crabllvm-pp crabllvm-pp.cc)
 target_link_libraries (crabllvm-pp
+  PRIVATE
   LlvmPasses
   ${LLVM_SEAHORN_LIBS}
  )
@@ -21,6 +22,7 @@ install(TARGETS crabllvm-pp RUNTIME DESTINATION bin)
 
 add_executable(crabllvm crabllvm.cc)
 target_link_libraries (crabllvm
+  PRIVATE
   CrabLlvmAnalysis 
   CrabLlvmInstrumentation 
   LlvmPasses
