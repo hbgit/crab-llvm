@@ -29,7 +29,7 @@ target_link_libraries (crabllvm
   ${LLVM_SEAHORN_LIBS}
 )
 if (HAVE_DSA)
-  target_link_libraries (crabllvm ${DSA_LIBS})
+  target_link_libraries (crabllvm PRIVATE ${DSA_LIBS})
 endif ()
 llvm_config (crabllvm ${LLVM_LINK_COMPONENTS})
 install(TARGETS crabllvm RUNTIME DESTINATION bin)
