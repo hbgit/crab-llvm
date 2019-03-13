@@ -1,6 +1,6 @@
 # Crab-llvm #
 
-<a href="https://travis-ci.org/seahorn/crab-llvm"><img src="https://travis-ci.org/seahorn/crab-llvm.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-5"/></a>
+<a href="https://travis-ci.org/seahorn/crab-llvm"><img src="https://travis-ci.org/seahorn/crab-llvm.svg?branch=dev-llvm-5.0" title="Ubuntu 12.04 LTS 64bit, g++-5"/></a>
 
 <img src="https://upload.wikimedia.org/wikipedia/en/4/4c/LLVM_Logo.svg" alt="llvm logo" width=280 height=200 /><img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 /> 
 
@@ -9,7 +9,7 @@ LLVM-based languages based on
 the [Crab](https://github.com/seahorn/crab) library. It currently
 supports LLVM 5.0.
 
-# Installation #
+# Requirements #
 
 Crab-llvm is written in C++ and uses heavily the Boost library. The
 main requirements are:
@@ -17,7 +17,7 @@ main requirements are:
 - C++ compiler supporting c++11
 - Boost
 - GMP 
-- MPFR (if `-DUSE_APRON=ON`)
+- MPFR (if `-DUSE_APRON=ON` or `-DUSE_ELINA=ON`)
 
 In linux, you can install requirements typing the commands:
 
@@ -25,7 +25,15 @@ In linux, you can install requirements typing the commands:
      sudo apt-get install libgmp-dev
      sudo apt-get install libmpfr-dev	
 
-Then, the basic compilation steps are:
+To run tests you need to install `lit` and `OutputCheck`. In Linux:
+
+     apt-get install python-pip
+     pip install lit
+     pip install OutputCheck
+
+# Installation # 
+
+The basic compilation steps are:
 
      mkdir build && cd build
      cmake -DCMAKE_INSTALL_PREFIX=_DIR_ ../
@@ -48,13 +56,18 @@ of Crab-llvm.
   [here](http://llvm.org/pubs/2003-11-15-DataStructureAnalysisTR.ps)
   and it is used by Crab-llvm to disambiguate the heap.
   
+* [sea-dsa](https://github.com/seahorn/sea-dsa): ```git clone https://github.com/seahorn/sea-dsa.git```
+
+  `sea-dsa` is a new DSA-based heap analysis more precise than
+  `llvm-dsa`. Details can be
+  found [here](https://jorgenavas.github.io/papers/sea-dsa-SAS17.pdf).
+  
 * [llvm-seahorn](https://github.com/seahorn/llvm-seahorn): ``` git clone https://github.com/seahorn/llvm-seahorn.git```
 
-`llvm-seahorn` provides specialized versions of `InstCombine` and
-`IndVarSimplify` LLVM passes as well as a LLVM pass to convert
-undefined values into nondeterministic calls.
+   `llvm-seahorn` provides specialized versions of `InstCombine` and
+   `IndVarSimplify` LLVM passes as well as a LLVM pass to convert undefined values into nondeterministic calls.
 
-To include `llvm-dsa` and `llvm-seahorn`, type instead:
+To include these external components, type instead:
 
      mkdir build && cd build
      cmake -DCMAKE_INSTALL_PREFIX=_DIR_ ../
@@ -63,11 +76,22 @@ To include `llvm-dsa` and `llvm-seahorn`, type instead:
      cmake --build . --target llvm && cmake ..           
      cmake --build . --target install 
 
-If you want to use the boxes domain then add `-DUSE_LDD=ON`.
+The Boxes/Apron/Elina domains require third-party libraries. To avoid
+the burden to users who are not interested in those domains, the
+installation of the libraries is optional.
 
-If you want to use the apron domains then add `-DUSE_APRON=ON`.
+- If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
 
-To install `crab-llvm` with Boxes and Apron:
+- If you want to use the Apron library domains then add
+  `-DUSE_APRON=ON` option.
+
+- If you want to use the Elina library domains then add
+  `-DUSE_ELINA=ON` option.
+
+**Important:** Apron and Elina are currently not compatible so you
+cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
+
+For instance, to install `crab-llvm` with Boxes and Apron:
 
      mkdir build && cd build
      cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
@@ -78,22 +102,15 @@ To install `crab-llvm` with Boxes and Apron:
      cmake --build . --target llvm && cmake ..                
      cmake --build . --target install 
 
+## Tests ## 
 
 To run some regression tests:
 
      cmake --build . --target test-simple
 
-To run tests you need to install `lit` and `OutputCheck`. In Linux:
-
-```
-$ apt-get install python-pip
-$ pip install lit
-$ pip install OutputCheck
-```
-
 # Crab-llvm architecture #
 
-![Crab-Llvm Architecture](https://github.com/seahorn/crab-llvm/blob/master/CrabLlvm_arch.jpg?raw=true "Crab-Llvm Architecture")
+![Crab-Llvm Architecture](https://github.com/seahorn/crab-llvm/blob/dev/CrabLlvm_arch.jpg?raw=true "Crab-Llvm Architecture")
 
 # Example 1 #
 
@@ -236,16 +253,17 @@ option `--crab-dom=VAL`. The possible values of `VAL` are:
 - `int`: intervals
 - `ric`: reduced product of `int` and congruences
 - `term-int`: `int` with uninterpreted functions
-- `zones`: zones domain using sparse DBM in split normal form
-- `oct`: Elina's optimized octagon domains (only if `-DUSE_APRON=ON`)
-- `pk`: Apron's polka domain (only if `-DUSE_APRON=ON`)
-- `boxes`: disjunctive intervals based on LDDs (only if `-DUSE_LDD=ON`)
 - `dis-int`: disjunctive intervals based on Clousot's DisInt domain
 - `term-dis-int`: `dis-int` with uninterpreted functions
-- `rtz`: reduced product of `term-dis-int` with `zones-split`.
+- `boxes`: disjunctive intervals based on LDDs (only if `-DUSE_LDD=ON`)
+- `zones`: zones domain using sparse DBM in split normal form
+- `oct`: Octagon domain (Apron if `-DUSE_APRON=ON` or Elina if `-DUSE_ELINA=ON`)
+- `pk`:  Polyhedra domain (Apron if `-DUSE_APRON=ON` or Elina if `-DUSE_ELINA=ON`) 
+- `rtz`: reduced product of `term-dis-int` with `zones`
+- `w-int`: wrapped interval domain
 
 For domains without narrowing operator (for instance `boxes`,
-`dis-int`, and `pk-apron`), you need to set the option:
+`dis-int`, and `pk`), you need to set the option:
 	
     --crab-narrowing-iterations=N
 
@@ -266,20 +284,21 @@ type the option
 where `N` is the maximum number of thresholds.
 
 We also provide the option `--crab-track=VAL` to indicate the level of
-abstraction. The possible values of `VAL` are:
+abstraction of the translation. The possible values of `VAL` are:
 
-- `int`: reasons about integer and boolean scalars (LLVM registers).
-- `ptr`: reasons about `int` and pointer offsets.	
-- `arr`: reasons about `ptr` and contents of pointers and arrays.
+- `num`: translate only operations over integer and boolean scalars (LLVM registers).
+- `ptr`: `num` + translate all operations over pointers using crab pointer operations. 
+- `arr`: `num` + translates all operations over pointers using pointer
+  arithmetic and Crab arrays.
 
-   If the level is `arr` then Crab-llvm uses the heap abstraction
-   provided by `llvm-dsa` to partition the heap into disjoint
-   regions. Each region is mapped to an array, and each LLVM load
-   and store is translated to an array read and write operation,
-   respectively. Then, it will use an array domain provided by Crab
-   whose base domain is the one selected by option `--crab-domain`. If
-   option `--crab-singleton-aliases` is enabled then Crab-llvm
-   translates global singleton regions to scalar variables.
+   If the level is `arr` then Crab-llvm's frontend will partition the
+   heap into disjoint regions using a pointer analysis. Each region is
+   mapped to a Crab array, and each LLVM load and store is translated
+   to an array read and write operation, respectively. Then, it will
+   use an array domain provided by Crab whose base domain is the one
+   selected by option `--crab-domain`. If option
+   `--crab-singleton-aliases` is enabled then Crab-llvm translates
+   global singleton regions to scalar variables.
 
 By default, all the analyses are run in an intra-procedural
 manner. Enable the option `--crab-inter` to run the inter-procedural
@@ -292,12 +311,12 @@ with recursive functions but imprecise. The option
 inter-procedural analysis is specially important if reasoning about
 memory contents is desired.
 
-Crab-llvm provides the option `--crab-backward` to enable an iterative
-forward-backward analysis that might produce more precise results. The
-backward analysis computes *necessary preconditions* of the error
-states (if program is annotated with assertions) which are used to
-refine the set of initial states so that the forward analysis can
-refine its results.
+Crab-llvm provides the **very experimental** option `--crab-backward`
+to enable an iterative forward-backward analysis that might produce
+more precise results. The backward analysis computes *necessary
+preconditions* of the error states (if program is annotated with
+assertions) which are used to refine the set of initial states so that
+the forward analysis can refine its results.
 
 Note that apart from inferring invariants or preconditions, Crab-llvm
 allows checking for assertions. To do that, programs must be annotated
@@ -404,27 +423,33 @@ between 0 and 5.
 Well, there are many. Most of these limitations are coming from
 Crab. Here some of them:
 
-- Crab numerical domains mostly reason about linear arithmetic.
+- Most Crab numerical domains reason about linear arithmetic. The
+  `term-int` domain is an exception.
 
-- Most Crab numerical domains reason about infinite integers.
+- Most Crab numerical domains reason about infinite integers. The
+  `w-int` domain is an exception.
 
 - There are several Crab numerical domains that compute disjunctive
-  invariants but they are still limited in terms of expressiveness to
-  keep them tractable.
+  invariants (e.g., `boxes` or `dis-int`) but they are still limited
+  in terms of expressiveness to keep them tractable.
 
 - The interprocedural analysis is summary-based but it's
-  context-insensitive.
+  context-insensitive. 
   
-- Crab does not provide any pointer or shape analysis but it provides
-  a simple nullity analysis that can tell whether pointer may be null
-  or not.
-
-- Crab-llvm can reason about pointer's contents only if `llvm-dsa` can
-  infer statically that a pointer points to a memory region that
-  behaves as a C arrays (i.e., consecutive sequence of bytes where
-  elements must have compatible types and offset must be multiple of
-  the element type size). Once a logical array has been identified,
-  Crab-llvm uses one of the Crab array domains to reason about their
-  contents. Currently, it only supports array smashing.
+- The backward analysis is too experimental. 
+  
+- The option `--crab-track=ptr` translates pointer operations to Crab
+  pointer operations without losing precision. However, Crab does not
+  provide currently any pointer or shape analysis, and thus, very
+  little reasoning about pointer operations can be currently done.
+ 
+  Alternatively, points-to information can be provided to Crab-llvm by
+  `llvm-dsa`/`sea-dsa` as a pre-analysis step if `--crab-track=arr`.
+  Crab-llvm uses this pre-analysis step to statically partition memory
+  into disjoint regions and then (under some conditions) translate
+  regions to Crab arrays. Then, Crab-llvm uses one of the Crab array
+  domains to reason about their contents. Currently, Crab-llvm only
+  supports array smashing but there are more precise array domains
+  implemented in Crab that just need to be integrated.
 	  
   

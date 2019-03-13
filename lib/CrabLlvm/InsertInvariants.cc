@@ -20,8 +20,6 @@
 #include "crab_llvm/CfgBuilder.hh"
 #include "crab_llvm/CrabLlvm.hh"
 #include "crab/analysis/abs_transformer.hpp"
-#include "crab/domains/domain_traits.hpp"
-
 
 /* 
  * Instrument LLVM bitecode by inserting invariants computed by
@@ -373,13 +371,13 @@ namespace crab_llvm {
 			 cfg.get_node(&B), F.getContext(), cg, change);
               break;
             }
-            case GenericAbsDomWrapper::opt_oct_apron: {
-              INSTR_LOAD(opt_oct_apron_domain_t, pre,
+            case GenericAbsDomWrapper::oct: {
+              INSTR_LOAD(oct_domain_t, pre,
 			 cfg.get_node(&B), F.getContext(), cg, change);
               break;
             }
-            case GenericAbsDomWrapper::pk_apron: {
-              INSTR_LOAD(pk_apron_domain_t, pre,
+            case GenericAbsDomWrapper::pk: {
+              INSTR_LOAD(pk_domain_t, pre,
 			 cfg.get_node(&B), F.getContext(), cg, change);
               break;
             }

@@ -103,6 +103,33 @@ CrabVerbose("crab-verbose",
 	    llvm::cl::location (verbose),
 	    llvm::cl::value_desc ("uint"));
 
+
+struct WarningOpt {
+  void operator=(bool val) const 
+  { crab::CrabEnableWarningMsg(val); } 
+};
+
+WarningOpt warning;
+
+static llvm::cl::opt<WarningOpt, true, llvm::cl::parser<bool> > 
+CrabEnableWarning("crab-enable-warnings",
+	    llvm::cl::desc ("Enable warning messages"),
+	    llvm::cl::location (warning),
+	    llvm::cl::value_desc ("bool"));
+
+struct SanityChecksOpt {
+  void operator=(bool val) const 
+  { crab::CrabEnableSanityChecks(val); } 
+};
+
+SanityChecksOpt sanity;
+
+static llvm::cl::opt<SanityChecksOpt, true, llvm::cl::parser<bool> > 
+CrabSanityChecks("crab-sanity-checks",
+	    llvm::cl::desc("Enable sanity checks"),
+	    llvm::cl::location(sanity),
+	    llvm::cl::value_desc("bool"));
+
 using namespace crab_llvm;
 
 // removes extension from filename if there is one

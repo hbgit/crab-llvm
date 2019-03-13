@@ -24,6 +24,9 @@ namespace crab_llvm {
   class InterCrabLlvm_Impl;
 }
 
+namespace sea_dsa {
+  class AllocWrapInfo;
+}
 
 namespace crab_llvm {
    ////
@@ -42,11 +45,23 @@ namespace crab_llvm {
        , TERMS_ZONES 
          //(#live vars<threshold ? TERMS_INTERVALSxZONES_SPLIT_DBM, INTERVALS)
        , ADAPT_TERMS_ZONES 
-       , OPT_OCT_APRON
-       , PK_APRON
+       , OCT
+       , PK
        , WRAPPED_INTERVALS
      };
 
+  ////
+  // Heap analysis for memory disambiguation
+  ////
+  enum heap_analysis_t
+    { // use llvm-dsa (only context-insensitive)
+      LLVM_DSA = 0,
+      // use context-insensitive sea-dsa
+      CI_SEA_DSA = 1,
+      // use context-sensitive sea-dsa
+      CS_SEA_DSA = 2
+  };
+  
   ////
   // Kind of checker
   ////
@@ -54,7 +69,8 @@ namespace crab_llvm {
     { NOCHECKS = 0,
       ASSERTION = 1,
       NULLITY = 2
-    };  
+    };
+
 }
 
 namespace crab_llvm {
@@ -75,7 +91,7 @@ namespace crab_llvm {
     bool stats;
     bool print_invars;
     bool print_preconds;
-    bool print_assumptions;
+    bool print_unjustified_assumptions;
     bool print_summaries;
     bool store_invariants;
     bool keep_shadow_vars;
@@ -89,7 +105,7 @@ namespace crab_llvm {
 	widening_delay(1), narrowing_iters(10), widening_jumpset(0),
 	stats(false),
 	print_invars(false), print_preconds(false),
-	print_assumptions(false), print_summaries(false),
+	print_unjustified_assumptions(false), print_summaries(false),
 	store_invariants(true), keep_shadow_vars(false),
 	check(NOCHECKS), check_verbose(0) { }
 
@@ -187,12 +203,16 @@ namespace crab_llvm {
     template<typename Statement>
     bool path_analyze(const AnalysisParams& params,
 		      const std::vector<const llvm::BasicBlock*>& path,
+		      /* use gradually more expensive domains until unsat is proven*/
+		      bool layered_solving,
 		      std::vector<Statement>& core,
 		      invariant_map_t& post, invariant_map_t& pre) const;
     
     template<typename Statement>
     bool path_analyze(const AnalysisParams& params,
 		      const std::vector<const llvm::BasicBlock*>& path,
+		      /* use gradually more expensive domains until unsat is proven*/
+		      bool layered_solving,
 		      std::vector<Statement>& core) const;
 
     /**
